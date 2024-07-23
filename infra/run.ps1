@@ -1,0 +1,1 @@
+az deployment sub create --template-file "main.bicep" --location "eastus"
