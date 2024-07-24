@@ -38,6 +38,17 @@ module servicebus './modules/servicebus.bicep' = {
   ]
 }
 
+module storage './modules/storage.bicep' = {
+  scope: resourceGroup
+  name: 'storage'
+  params: {
+    location: location
+    prefix: prefix
+  }
+  dependsOn: [
+    resourceGroup
+  ]
+}
 // module prometheus './modules/prometheus.bicep' = {
 //   scope: resourceGroup
 //   name: 'prometheus'
