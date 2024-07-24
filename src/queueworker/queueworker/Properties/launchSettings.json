@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "queueworker": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

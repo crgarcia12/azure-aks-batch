@@ -1,4 +1,6 @@
+using Azure.Messaging.ServiceBus;
 using client.Models;
+using client.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
@@ -18,9 +20,12 @@ namespace client.Controllers
             return View();
         }
 
-        public IActionResult Privacy()
+        public async Task<IActionResult> Privacy()
         {
+            ServiceBus sb = new ServiceBus();
+            await sb.SendMessages(50);
             return View();
+
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
