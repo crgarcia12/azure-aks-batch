@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- client.yaml
+images:
+- name: client
+  newName: crgaraksbatchacr.azurecr.io/client
+  newTag: local-003

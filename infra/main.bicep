@@ -49,6 +49,21 @@ module storage './modules/storage.bicep' = {
     resourceGroup
   ]
 }
+
+module acr './modules/acr.bicep' = {
+  scope: resourceGroup
+  name: 'acr'
+  params: {
+    location: location
+    prefix: prefix
+    aksId: aks.outputs.id
+    kubeletidentityId: aks.outputs.kubeletidentityId
+  }
+  dependsOn: [
+    resourceGroup
+  ]
+}
+
 // module prometheus './modules/prometheus.bicep' = {
 //   scope: resourceGroup
 //   name: 'prometheus'

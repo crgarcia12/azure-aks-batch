@@ -5,6 +5,6 @@
         public int BatchId;
         public int MessageId;
         public int Digits;
-        public string ResponseQueueName;
+        public string ResponseQueueName = String.Empty;
     }
 }

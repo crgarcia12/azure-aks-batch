@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: queueworker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: queueworker
+  template:
+    metadata:
+      labels:
+        app: queueworker
+    spec:
+      containers:
+      - name: queueworker
+        image: queueworker
+        volumeMounts:
+        - name: secrets
+          mountPath: "/mnt/secrets"
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: container-secrets
+          optional: false

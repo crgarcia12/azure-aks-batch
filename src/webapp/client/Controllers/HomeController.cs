@@ -23,9 +23,9 @@ namespace client.Controllers
         public async Task<IActionResult> Privacy()
         {
             ServiceBus sb = new ServiceBus();
-            await sb.SendMessages(50);
-            return View();
 
+            await sb.SendMessages(_logger, 50);
+            return View();
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

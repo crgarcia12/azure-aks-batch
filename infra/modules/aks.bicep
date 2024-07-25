@@ -72,3 +72,5 @@ resource batchAksCluster 'Microsoft.ContainerService/managedClusters@2024-02-01'
 }
 
 output aksName string = batchAksCluster.name
+output id string = batchAksCluster.id
+output kubeletidentityId string = batchAksCluster.properties.identityProfile.kubeletidentity.objectId

@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+      - name: client
+        image: client
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: secrets
+          mountPath: "/mnt/secrets"
+          readOnly: true
+      volumes:
+      - name: secrets
+        secret:
+          secretName: container-secrets
+          optional: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: client

@@ -1,19 +1,28 @@
 ﻿using Azure.Core.Diagnostics;
 using Azure.Messaging.ServiceBus;
-using System;
-using System.Collections.Generic;
+using Azure.Messaging.ServiceBus.Administration;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using worker.Services;
 
 namespace queueworker;
 
-public class ServiceBusService
+public class ServiceBus
 {
-    public async Task<ServiceBusProcessor> ProcessMessagesAsync()
+    ServiceBusProcessor? processor;
+    public string GetProcessorState()
     {
+        if (processor == null)
+        {
+            return "Processor - Not initialized";
+        }
+        return $"Processor - IsProcessing:{processor.IsProcessing} IsClosed:{processor.IsClosed}";
+    }
+
+    public async Task ProcessMessagesAsync()
+    {
+        string connStr = GetSecret("ServiceBusConnectionString");
+        string queueName = GetSecret("ServiceBusQueueName");
+
         Console.WriteLine("Starting the queue client");
 
         // Set the logger, otherwise the processor will eat the exceptions
@@ -26,16 +35,16 @@ public class ServiceBusService
             TransportType = ServiceBusTransportType.AmqpWebSockets
         };
 
-        var client = new ServiceBusClient(connstr, sbClientOptions);
+        var client = new ServiceBusClient(connStr, sbClientOptions);
 
         // create the options to use for configuring the processor
         var sbProcessorOptions = new ServiceBusProcessorOptions
         {
             AutoCompleteMessages = false,
-            MaxConcurrentCalls = 2,
+            MaxConcurrentCalls = 100,
         };
 
-        await using ServiceBusProcessor processor = client.CreateProcessor(queueName, sbProcessorOptions);
+        processor = client.CreateProcessor(queueName, sbProcessorOptions);
         processor.ProcessMessageAsync += MessageHandler;
         processor.ProcessErrorAsync += ErrorHandler;
 
@@ -66,6 +75,74 @@ public class ServiceBusService
         }
 
         await processor.StartProcessingAsync();
-        return processor;
+        return;
+    }
+
+    private string GetSecret(string secretName)
+    {
+        Console.WriteLine($"Getting secret {secretName}");
+        string value = Environment.GetEnvironmentVariable(secretName) ?? String.Empty ;
+        Console.WriteLine($"[Env]Secret '{secretName}' is '{value}'");
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            value = File.ReadAllText("/mnt/secrets/" + secretName);
+            Console.WriteLine($"[File]Secret '{secretName}' is '{value}'");
+        }
+
+        Console.WriteLine($"[Result]Secret '{secretName}' is '{value}'");
+        return value;
+    }
+
+    private async Task<ServiceBusClient> GetServiceBusClient()
+    {
+        string connStr = GetSecret("ServiceBusConnectionString");
+        string queueName = GetSecret("ServiceBusQueueName");
+
+        ServiceBusAdministrationClient serviceBusAdministrationClient = new ServiceBusAdministrationClient(connStr);
+        if (!await serviceBusAdministrationClient.QueueExistsAsync(queueName))
+        {
+            await serviceBusAdministrationClient.CreateQueueAsync(queueName);
+        }
+
+        var clientOptions = new ServiceBusClientOptions()
+        {
+            TransportType = ServiceBusTransportType.AmqpWebSockets
+        };
+
+        return new ServiceBusClient(connStr, clientOptions);
+    }
+
+    public async Task SendMessages(int quantity)
+    {
+        string queueName = GetSecret("ServiceBusQueueName");
+
+        await using (ServiceBusClient client = await GetServiceBusClient())
+        {
+            await using (var sender = client.CreateSender(queueName))
+            {
+                using (ServiceBusMessageBatch messageBatch = await sender.CreateMessageBatchAsync())
+                {
+                    for (int i = 1; i <= quantity; i++)
+                    {
+                        if (!messageBatch.TryAddMessage(new ServiceBusMessage($"Message {i}")))
+                        {
+                            throw new Exception($"The message {i} is too large to fit in the batch.");
+                        }
+                    }
+                    try
+                    {
+                        // Use the producer client to send the batch of messages to the Service Bus queue
+                        await sender.SendMessagesAsync(messageBatch);
+                        Console.WriteLine($"A batch of {quantity} messages has been published to the queue.");
+                    }
+                    finally
+                    {
+                        // Calling DisposeAsync on client types is required to ensure that network
+                        // resources and other unmanaged objects are properly cleaned up.
+                    }
+                }
+            }
+        }
     }
 }
