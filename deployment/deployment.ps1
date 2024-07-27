@@ -1,43 +1,81 @@
 # You need Kustomize to run this script.
 # Install on windows: choco install Kustomize
 
-$prefix = "crgar-aks-batch"
+# You also need to set the secrets. Copy platform/secrets.template.yaml to platform/secrets.yaml and fill in the values.
+
+param(
+    [string] $imageVersion = "010",
+    [string] $prefix = "crgar-aks-batch",
+    [switch] $delete = $false
+)
+
+function Get-UtcString() {
+    return Get-Date -UFormat "%Y-%m-%dT%H:%M:%SZ"
+}
+
+function Execute-Block([string]$blockName, [ScriptBlock]$block) {
+    Write-Verbose "[$(Get-UtcString)] Starting $blockName ..." -Verbose
+    $stopwatch = [System.Diagnostics.Stopwatch].StartNew()
+    & $block
+    Write-Verbose "[$(Get-UtcString)] Finished $blockName. It took $($stopwatch.Elapsed.TotalMilliseconds) ms" -Verbose
+}
+
+
 $resourceGroup = "$prefix-rg"
 $acrName = "$prefix-acr" -Replace "-", ""
 $aksName = "$prefix-aks"
 
-$imageVersion = "003"
+$action = "apply"
+if($delete) {
+    $action = "delete"
+}
 
 # Login
-az aks get-credentials --resource-group $resourceGroup --name $aksName --admin
-az acr login --name $acrName
+Execute-Block "Login" {    
+    az aks get-credentials --resource-group $resourceGroup --name $aksName --admin
+    az acr login --name $acrName
+}
 
-# Deploy secrets
-pushd .\secrets
-kubectl apply -f secrets.yaml
-popd
+# Deploy platform
+Execute-Block "$action platform components" {  
+    pushd .\platform  
+        kubectl $action -f namespace.yaml
+        kubectl $action -f secrets.yaml
+    popd
+}
 
 # Build worker
-pushd ..\src\queueworker\queueworker
 $imageName = "$acrName.azurecr.io/queueworker:local-$imageVersion"
-docker build -t $imageName .
-docker push $imageName
-popd
+if(!$delete) {
+    Execute-Block "Building queue worker" {  
+        pushd ..\src\queueworker\queueworker
+        docker build -t $imageName .
+        docker push $imageName
+        popd
+    }
+}
 
-pushd queueworker
-kustomize edit set image queueworker=$imageName
-kubectl apply -k .
-popd
-
+Execute-Block "$action queue worker" {  
+    pushd queueworker
+    kustomize edit set image queueworker=$imageName
+    kubectl $action -k .
+    popd
+}
 
 # Build client
-pushd ..\src\webapp\client
 $imageName = "$acrName.azurecr.io/client:local-$imageVersion"
-docker build -t $imageName .
-docker push $imageName
-popd
+if(!$delete) {
+    Execute-Block "Building client" {  
+        pushd ..\src\webapp\client
+        docker build -t $imageName .
+        docker push $imageName
+        popd
+    }
+}
 
-pushd client
-kustomize edit set image client=$imageName
-kubectl apply -k .
-popd
+Execute-Block "$action client" {  
+    pushd client
+    kustomize edit set image client=$imageName
+    kubectl $action -k .
+    popd
+}

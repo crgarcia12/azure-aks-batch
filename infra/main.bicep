@@ -64,18 +64,18 @@ module acr './modules/acr.bicep' = {
   ]
 }
 
-// module prometheus './modules/prometheus.bicep' = {
-//   scope: resourceGroup
-//   name: 'prometheus'
-//   params: {
-//     location: location
-//     aksName: aks.outputs.aksName
-//     prefix: prefix
-//   }
-//   dependsOn: [
-//     resourceGroup
-//   ]
-// }
+module prometheus './modules/prometheus.bicep' = {
+  scope: resourceGroup
+  name: 'prometheus'
+  params: {
+    location: location
+    aksName: aks.outputs.aksName
+    prefix: prefix
+  }
+  dependsOn: [
+    resourceGroup
+  ]
+}
 
 // module grafana './modules/grafana.bicep' = {
 //   scope: resourceGroup
@@ -86,6 +86,6 @@ module acr './modules/acr.bicep' = {
 //     managedPrometheusId: prometheus.outputs.id
 //   }
 //   dependsOn: [
-//     resourceGroup
+//     prometheus
 //   ]
 // }

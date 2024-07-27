@@ -1,31 +1,20 @@
 ﻿using Azure.Core;
 using Azure.Messaging.ServiceBus;
 using Azure.Messaging.ServiceBus.Administration;
+using Client.Services;
+using Shared;
 
 namespace client.Services;
 
 public class ServiceBus
 {
-    private string GetSecret(string secretName, ILogger logger)
-    {
-        logger.LogInformation($"Getting secret {secretName}");
-        string value = Environment.GetEnvironmentVariable(secretName) ?? String.Empty;
-        logger.LogInformation($"[Env]Secret '{secretName}' is '{value}'");
-
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            value = File.ReadAllText("/mnt/secrets/" + secretName);
-            logger.LogInformation($"[File]Secret '{secretName}' is '{value}'");
-        }
-
-        logger.LogInformation($"[Result]Secret '{secretName}' is '{value}'");
-        return value;
-    }
+    private static int BatchId = 0;
+    private static Random Rand = new Random();
 
     private async Task<ServiceBusClient> GetServiceBusClient(ILogger logger)
     {
-        string connStr = GetSecret("ServiceBusConnectionString", logger);
-        string queueName = GetSecret("ServiceBusQueueName", logger);
+        string connStr = SecretProvider.GetSecret("ServiceBusConnectionString", logger);
+        string queueName = Constant.ServiceBusRequestQueueName;
 
         ServiceBusAdministrationClient serviceBusAdministrationClient = new ServiceBusAdministrationClient(connStr);
         if (!await serviceBusAdministrationClient.QueueExistsAsync(queueName))
@@ -33,8 +22,6 @@ public class ServiceBus
             await serviceBusAdministrationClient.CreateQueueAsync(queueName);
         }
 
-        ServiceBusClient client;
-        ServiceBusSender sender;
         var clientOptions = new ServiceBusClientOptions()
         {
             TransportType = ServiceBusTransportType.AmqpWebSockets
@@ -45,7 +32,7 @@ public class ServiceBus
 
     public async Task SendMessages(ILogger logger, int quantity)
     {
-        string queueName = GetSecret("ServiceBusQueueName", logger);
+        string queueName = Constant.ServiceBusRequestQueueName;
 
         await using (ServiceBusClient client = await GetServiceBusClient(logger))
         {
@@ -55,9 +42,18 @@ public class ServiceBus
                 {
                     for (int i = 1; i <= quantity; i++)
                     {
-                        if (!messageBatch.TryAddMessage(new ServiceBusMessage($"Message {i}")))
+                        var message = new CalculatorMessage()
                         {
-                            throw new Exception($"The message {i} is too large to fit in the batch.");
+                            BatchId = BatchId,
+                            MessageId = i,
+                            Digits = Rand.Next(1, 1000),
+                            ResponseSessionId = Receiver.SessionId
+                        };
+
+
+                        if (!messageBatch.TryAddMessage(new ServiceBusMessage(BinaryData.FromObjectAsJson<CalculatorMessage>(message))))
+                        {
+                            throw new Exception($"Could not add message to the batch");
                         }
                     }
                     try

@@ -1,6 +1,7 @@
 ﻿using Azure.Core.Diagnostics;
 using Azure.Messaging.ServiceBus;
 using Azure.Messaging.ServiceBus.Administration;
+using Shared;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 
@@ -21,7 +22,7 @@ public class ServiceBus
     public async Task ProcessMessagesAsync()
     {
         string connStr = GetSecret("ServiceBusConnectionString");
-        string queueName = GetSecret("ServiceBusQueueName");
+        string queueName = Constant.ServiceBusRequestQueueName;
 
         Console.WriteLine("Starting the queue client");
 
@@ -53,7 +54,9 @@ public class ServiceBus
             try
             {
                 string body = args.Message.Body.ToString();
-                Console.WriteLine(body);
+                CalculatorMessage msg = BinaryData.FromString(body).ToObjectFromJson<CalculatorMessage>();
+                msg.Response = msg.Digits * 2;
+                await SendResponse(msg);
                 await args.CompleteMessageAsync(args.Message);
             }
             catch (Exception ex)
@@ -97,7 +100,7 @@ public class ServiceBus
     private async Task<ServiceBusClient> GetServiceBusClient()
     {
         string connStr = GetSecret("ServiceBusConnectionString");
-        string queueName = GetSecret("ServiceBusQueueName");
+        string queueName = Constant.ServiceBusResponseQueueName;
 
         ServiceBusAdministrationClient serviceBusAdministrationClient = new ServiceBusAdministrationClient(connStr);
         if (!await serviceBusAdministrationClient.QueueExistsAsync(queueName))
@@ -113,35 +116,19 @@ public class ServiceBus
         return new ServiceBusClient(connStr, clientOptions);
     }
 
-    public async Task SendMessages(int quantity)
+    public async Task SendResponse(CalculatorMessage message)
     {
-        string queueName = GetSecret("ServiceBusQueueName");
+        string queueName = Constant.ServiceBusResponseQueueName;
 
         await using (ServiceBusClient client = await GetServiceBusClient())
         {
             await using (var sender = client.CreateSender(queueName))
             {
-                using (ServiceBusMessageBatch messageBatch = await sender.CreateMessageBatchAsync())
+                var msg = new ServiceBusMessage(BinaryData.FromObjectAsJson<CalculatorMessage>(message))
                 {
-                    for (int i = 1; i <= quantity; i++)
-                    {
-                        if (!messageBatch.TryAddMessage(new ServiceBusMessage($"Message {i}")))
-                        {
-                            throw new Exception($"The message {i} is too large to fit in the batch.");
-                        }
-                    }
-                    try
-                    {
-                        // Use the producer client to send the batch of messages to the Service Bus queue
-                        await sender.SendMessagesAsync(messageBatch);
-                        Console.WriteLine($"A batch of {quantity} messages has been published to the queue.");
-                    }
-                    finally
-                    {
-                        // Calling DisposeAsync on client types is required to ensure that network
-                        // resources and other unmanaged objects are properly cleaned up.
-                    }
-                }
+                    SessionId = message.ResponseSessionId
+                };
+                await sender.SendMessageAsync(msg);
             }
         }
     }

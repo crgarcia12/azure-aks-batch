@@ -5,4 +5,4 @@ resources:
 images:
 - name: queueworker
   newName: crgaraksbatchacr.azurecr.io/queueworker
-  newTag: local-003
+  newTag: local-010

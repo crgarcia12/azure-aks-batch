@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: client
+  namespace: calculator
 spec:
   replicas: 1
   selector:
@@ -9,6 +10,7 @@ spec:
       app: client
   template:
     metadata:
+      namespace: calculator
       labels:
         app: client
     spec:
@@ -24,12 +26,13 @@ spec:
       volumes:
       - name: secrets
         secret:
-          secretName: container-secrets
+          secretName: calculator-container-secrets
           optional: false
 ---
 apiVersion: v1
 kind: Service
 metadata:
+  namespace: calculator
   name: client-service
 spec:
   type: LoadBalancer
