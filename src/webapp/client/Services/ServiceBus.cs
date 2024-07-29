@@ -13,7 +13,7 @@ public class ServiceBus
 
     private async Task<ServiceBusClient> GetServiceBusClient(ILogger logger)
     {
-        string connStr = SecretProvider.GetSecret("ServiceBusConnectionString", logger);
+        string connStr = SecretProvider.GetSecret("ServiceBusConnectionString");
         string queueName = Constant.ServiceBusRequestQueueName;
 
         ServiceBusAdministrationClient serviceBusAdministrationClient = new ServiceBusAdministrationClient(connStr);
@@ -50,8 +50,8 @@ public class ServiceBus
                             ResponseSessionId = Receiver.SessionId
                         };
 
-
-                        if (!messageBatch.TryAddMessage(new ServiceBusMessage(BinaryData.FromObjectAsJson<CalculatorMessage>(message))))
+                        Console.WriteLine($"Sending message: '{message.ToString()}'-");
+                        if (!messageBatch.TryAddMessage(new ServiceBusMessage(message.ToString())))
                         {
                             throw new Exception($"Could not add message to the batch");
                         }

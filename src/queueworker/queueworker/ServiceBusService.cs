@@ -21,7 +21,7 @@ public class ServiceBus
 
     public async Task ProcessMessagesAsync()
     {
-        string connStr = GetSecret("ServiceBusConnectionString");
+        string connStr = SecretProvider.GetSecret("ServiceBusConnectionString");
         string queueName = Constant.ServiceBusRequestQueueName;
 
         Console.WriteLine("Starting the queue client");
@@ -54,7 +54,7 @@ public class ServiceBus
             try
             {
                 string body = args.Message.Body.ToString();
-                CalculatorMessage msg = BinaryData.FromString(body).ToObjectFromJson<CalculatorMessage>();
+                var msg = CalculatorMessage.FromJsonString(body);
                 msg.Response = msg.Digits * 2;
                 await SendResponse(msg);
                 await args.CompleteMessageAsync(args.Message);
@@ -81,25 +81,9 @@ public class ServiceBus
         return;
     }
 
-    private string GetSecret(string secretName)
-    {
-        Console.WriteLine($"Getting secret {secretName}");
-        string value = Environment.GetEnvironmentVariable(secretName) ?? String.Empty ;
-        Console.WriteLine($"[Env]Secret '{secretName}' is '{value}'");
-
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            value = File.ReadAllText("/mnt/secrets/" + secretName);
-            Console.WriteLine($"[File]Secret '{secretName}' is '{value}'");
-        }
-
-        Console.WriteLine($"[Result]Secret '{secretName}' is '{value}'");
-        return value;
-    }
-
     private async Task<ServiceBusClient> GetServiceBusClient()
     {
-        string connStr = GetSecret("ServiceBusConnectionString");
+        string connStr = SecretProvider.GetSecret("ServiceBusConnectionString");
         string queueName = Constant.ServiceBusResponseQueueName;
 
         ServiceBusAdministrationClient serviceBusAdministrationClient = new ServiceBusAdministrationClient(connStr);
@@ -124,10 +108,11 @@ public class ServiceBus
         {
             await using (var sender = client.CreateSender(queueName))
             {
-                var msg = new ServiceBusMessage(BinaryData.FromObjectAsJson<CalculatorMessage>(message))
+                var msg = new ServiceBusMessage(message.ToString())
                 {
                     SessionId = message.ResponseSessionId
                 };
+                Console.WriteLine($"Responding with message: '{msg.ToString()}'-");
                 await sender.SendMessageAsync(msg);
             }
         }

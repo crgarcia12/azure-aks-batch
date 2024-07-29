@@ -8,7 +8,7 @@ namespace Shared
 {
     public static class Constant
     {
-        public const String ServiceBusRequestQueueName = "ServiceBusRequestQueueName";
-        public const String ServiceBusResponseQueueName = "ServiceBusResponseQueueName";
+        public const String ServiceBusRequestQueueName = "RequestQueue";
+        public const String ServiceBusResponseQueueName = "ResponseQueue";
     }
 }

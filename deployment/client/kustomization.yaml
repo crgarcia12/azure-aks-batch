@@ -5,4 +5,4 @@ resources:
 images:
 - name: client
   newName: crgaraksbatchacr.azurecr.io/client
-  newTag: local-010
+  newTag: local-028

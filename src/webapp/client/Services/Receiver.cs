@@ -7,21 +7,30 @@ namespace Client.Services
 {
     public static class Receiver
     {
-        public static string SessionId = Guid.NewGuid().ToString();
+        public static readonly string SessionId = Guid.NewGuid().ToString();
+        public static ServiceBusClient client;
+        public static ServiceBusSessionProcessor processor;
 
         public static async Task SetMessageReceiver()
         {
-            string connStr = SecretProvider.GetSecret("ServiceBusConnectionString", null);
+            string connStr = SecretProvider.GetSecret("ServiceBusConnectionString");
             string queueName = Constant.ServiceBusResponseQueueName;
 
             ServiceBusAdministrationClient serviceBusAdministrationClient = new ServiceBusAdministrationClient(connStr);
+            CreateQueueOptions responseQueueOptions = new CreateQueueOptions(queueName)
+            {
+                DefaultMessageTimeToLive = TimeSpan.FromMinutes(5),
+                Name = queueName,
+                EnablePartitioning = true,
+                RequiresSession = true
+            };
             if (!await serviceBusAdministrationClient.QueueExistsAsync(queueName))
             {
-                await serviceBusAdministrationClient.CreateQueueAsync(queueName);
+                await serviceBusAdministrationClient.CreateQueueAsync(responseQueueOptions);
             }
 
             // since ServiceBusClient implements IAsyncDisposable we create it with "await using"
-            await using var client = new ServiceBusClient(connStr);
+            client = new ServiceBusClient(connStr);
 
             // create the options to use for configuring the processor
             var options = new ServiceBusSessionProcessorOptions
@@ -35,11 +44,11 @@ namespace Client.Services
                 MaxConcurrentCallsPerSession = 2,
 
                 // Processing can be optionally limited to a subset of session Ids.
-                SessionIds = { SessionId},
+                SessionIds = { SessionId },
             };
 
             // create a session processor that we can use to process the messages
-            await using ServiceBusSessionProcessor processor = client.CreateSessionProcessor(queueName, options);
+            processor = client.CreateSessionProcessor(queueName, options);
 
             // configure the message and error event handler to use - these event handlers are required
             processor.ProcessMessageAsync += MessageHandler;
@@ -57,12 +66,12 @@ namespace Client.Services
 
             async Task MessageHandler(ProcessSessionMessageEventArgs args)
             {
-                CalculatorMessage message = args.Message.Body.ToObjectFromJson<CalculatorMessage>();
+                CalculatorMessage message = CalculatorMessage.FromJsonString(args.Message.Body.ToString());
 
                 // we can evaluate application logic and use that to determine how to settle the message.
                 await args.CompleteMessageAsync(args.Message);
 
-                Console.WriteLine("Received: " + message.Response);
+                Console.WriteLine("Received response: " + message.ToString());
             }
 
             Task ErrorHandler(ProcessErrorEventArgs args)
@@ -80,11 +89,13 @@ namespace Client.Services
 
             async Task SessionInitializingHandler(ProcessSessionEventArgs args)
             {
+                Console.WriteLine("************** Session Initializing Handler **************");
                 await args.SetSessionStateAsync(new BinaryData("Some state specific to this session when the session is opened for processing."));
             }
 
             async Task SessionClosingHandler(ProcessSessionEventArgs args)
             {
+                Console.WriteLine("Finish processing responses");
                 // We may want to clear the session state when no more messages are available for the session or when some known terminal message
                 // has been received. This is entirely dependent on the application scenario.
                 BinaryData sessionState = await args.GetSessionStateAsync();
@@ -97,7 +108,7 @@ namespace Client.Services
 
             // start processing
             await processor.StartProcessingAsync();
-
+            Console.WriteLine($"(\"************** Responses procesor IsProcessing: {processor.IsProcessing} IsClosed: {processor.IsClosed}");
             // since the processing happens in the background, we add a Console.ReadKey to allow the processing to continue until a key is pressed.
             Console.ReadKey();
         }
