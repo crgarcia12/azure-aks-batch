@@ -11,7 +11,7 @@ public class ServiceBus
     private static int BatchId = 0;
     private static Random Rand = new Random();
 
-    private async Task<ServiceBusClient> GetServiceBusClient(ILogger logger)
+    private async Task<ServiceBusClient> GetServiceBusClient()
     {
         string connStr = SecretProvider.GetSecret("ServiceBusConnectionString");
         string queueName = Constant.ServiceBusRequestQueueName;
@@ -30,24 +30,26 @@ public class ServiceBus
         return new ServiceBusClient(connStr, clientOptions);
     }
 
-    public async Task SendMessages(ILogger logger, int quantity)
+    public async Task SendMessages(string UserId, int Quantity)
     {
+        BatchId++;
         string queueName = Constant.ServiceBusRequestQueueName;
 
-        await using (ServiceBusClient client = await GetServiceBusClient(logger))
+        await using (ServiceBusClient client = await GetServiceBusClient())
         {
             await using (var sender = client.CreateSender(queueName))
             {
                 using (ServiceBusMessageBatch messageBatch = await sender.CreateMessageBatchAsync())
                 {
-                    for (int i = 1; i <= quantity; i++)
+                    for (int i = 1; i <= Quantity; i++)
                     {
                         var message = new CalculatorMessage()
                         {
                             BatchId = BatchId,
                             MessageId = i,
-                            Digits = Rand.Next(1, 1000),
-                            ResponseSessionId = Receiver.SessionId
+                            Digits = Rand.Next(1, 5),
+                            ResponseSessionId = Receiver.SessionId,
+                            UserId = UserId
                         };
 
                         Console.WriteLine($"Sending message: '{message.ToString()}'-");
@@ -60,7 +62,7 @@ public class ServiceBus
                     {
                         // Use the producer client to send the batch of messages to the Service Bus queue
                         await sender.SendMessagesAsync(messageBatch);
-                        Console.WriteLine($"A batch of {quantity} messages has been published to the queue.");
+                        Console.WriteLine($"A batch of {Quantity} messages has been published to the queue.");
                     }
                     finally
                     {

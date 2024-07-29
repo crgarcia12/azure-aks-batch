@@ -6,15 +6,15 @@
 <div class="container">
     <div class="row p-1">
         <div class="col-1">SessionId</div>
-        <div class="col-5"><input type="text" id="userInput" /></div>
+        <div class="col-5"><input type="text" id="sessionId" /></div>
     </div>
     <div class="row p-1">
-        <div class="col-1">NumberOfRequests</div>
-        <div class="col-5"><input type="text" class="w-100" id="messageInput" /></div>
+        <div class="col-1">Number of messages</div>
+        <div class="col-5"><input type="text" class="w-100" id="numberOfMessages" /></div>
     </div>
     <div class="row p-1">
         <div class="col-6 text-end">
-            <input type="button" id="sendButton" value="Request Pricing" />
+            <input type="button" id="sendButton" value="Request Calculations" />
         </div>
     </div>
     <div class="row p-1">
@@ -29,7 +29,4 @@
     </div>
 </div>
 <script src="~/js/signalr/dist/browser/signalr.js"></script>
-<script src="~/js/chat.js"></script>
-
-<script src="~/js/signalr/dist/browser/signalr.js"></script>
-<script src="~/js/chat.js"></script>
+<script src="~/js/calculatorHub.js"></script>

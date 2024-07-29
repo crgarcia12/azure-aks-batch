@@ -54,10 +54,15 @@ public class ServiceBus
             try
             {
                 string body = args.Message.Body.ToString();
-                var msg = CalculatorMessage.FromJsonString(body);
-                msg.Response = msg.Digits * 2;
-                await SendResponse(msg);
                 await args.CompleteMessageAsync(args.Message);
+                var msg = CalculatorMessage.FromJsonString(body);
+
+                PiCalculator piCalculator = new PiCalculator();
+                string piresponse = piCalculator.CalculatePi(msg.Digits);
+                msg.Response = piresponse;
+
+                await SendResponse(msg);
+                
             }
             catch (Exception ex)
             {

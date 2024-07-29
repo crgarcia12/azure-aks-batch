@@ -9,7 +9,8 @@ namespace Shared
         public int MessageId { get; set; }
         public int Digits { get; set; }
         public string ResponseSessionId { get; set; } = String.Empty;
-        public int Response { get; set; }
+        public string Response { get; set; } = String.Empty;
+        public string UserId { get; set; } = String.Empty;
 
 
         public override string ToString()

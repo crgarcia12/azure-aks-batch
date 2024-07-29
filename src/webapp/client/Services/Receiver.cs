@@ -1,17 +1,26 @@
 ﻿using Azure.Messaging.ServiceBus;
 using Azure.Messaging.ServiceBus.Administration;
+using Client.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Shared;
 
 namespace Client.Services
 {
-    public static class Receiver
+    public class Receiver
     {
         public static readonly string SessionId = Guid.NewGuid().ToString();
-        public static ServiceBusClient? client;
-        public static ServiceBusSessionProcessor? processor;
 
-        public static async Task SetMessageReceiver()
+        private ServiceBusClient? _client;
+        private ServiceBusSessionProcessor? _processor;
+        private IHubContext<CalculatorHub> _calculatorHub;
+
+        public Receiver(IHubContext<CalculatorHub> calculatorHub)
+        {
+            _calculatorHub = calculatorHub;
+        }
+
+        public async Task SetMessageReceiver()
         {
             string connStr = SecretProvider.GetSecret("ServiceBusConnectionString");
             string queueName = Constant.ServiceBusResponseQueueName;
@@ -30,7 +39,7 @@ namespace Client.Services
             }
 
             // since ServiceBusClient implements IAsyncDisposable we create it with "await using"
-            client = new ServiceBusClient(connStr);
+            _client = new ServiceBusClient(connStr);
 
             // create the options to use for configuring the processor
             var options = new ServiceBusSessionProcessorOptions
@@ -48,11 +57,11 @@ namespace Client.Services
             };
 
             // create a session processor that we can use to process the messages
-            processor = client.CreateSessionProcessor(queueName, options);
+            _processor = _client.CreateSessionProcessor(queueName, options);
 
             // configure the message and error event handler to use - these event handlers are required
-            processor.ProcessMessageAsync += MessageHandler;
-            processor.ProcessErrorAsync += ErrorHandler;
+            _processor.ProcessMessageAsync += MessageHandler;
+            _processor.ProcessErrorAsync += ErrorHandler;
 
             // configure optional event handlers that will be executed when a session starts processing and stops processing
             // NOTE: The SessionInitializingAsync event is raised when the processor obtains a lock for a session. This does not mean the session was
@@ -61,31 +70,9 @@ namespace Client.Services
             // in the ServiceBusSessionProcessorOptions. If additional messages are sent for that session later, the SessionInitializingAsync and SessionClosingAsync
             // events would be raised again.
 
-            processor.SessionInitializingAsync += SessionInitializingHandler;
-            processor.SessionClosingAsync += SessionClosingHandler;
+            _processor.SessionInitializingAsync += SessionInitializingHandler;
+            _processor.SessionClosingAsync += SessionClosingHandler;
 
-            async Task MessageHandler(ProcessSessionMessageEventArgs args)
-            {
-                CalculatorMessage message = CalculatorMessage.FromJsonString(args.Message.Body.ToString());
-
-                // we can evaluate application logic and use that to determine how to settle the message.
-                await args.CompleteMessageAsync(args.Message);
-
-                Console.WriteLine("Received response: " + message.ToString());
-            }
-
-            Task ErrorHandler(ProcessErrorEventArgs args)
-            {
-                Console.WriteLine("Error Receiving message");
-                // the error source tells me at what point in the processing an error occurred
-                Console.WriteLine(args.ErrorSource);
-                // the fully qualified namespace is available
-                Console.WriteLine(args.FullyQualifiedNamespace);
-                // as well as the entity path
-                Console.WriteLine(args.EntityPath);
-                Console.WriteLine(args.Exception.ToString());
-                return Task.CompletedTask;
-            }
 
             async Task SessionInitializingHandler(ProcessSessionEventArgs args)
             {
@@ -107,10 +94,34 @@ namespace Client.Services
             }
 
             // start processing
-            await processor.StartProcessingAsync();
-            Console.WriteLine($"(\"************** Responses procesor IsProcessing: {processor.IsProcessing} IsClosed: {processor.IsClosed}");
+            await _processor.StartProcessingAsync();
+            Console.WriteLine($"(\"************** Responses procesor IsProcessing: {_processor.IsProcessing} IsClosed: {_processor.IsClosed}");
             // since the processing happens in the background, we add a Console.ReadKey to allow the processing to continue until a key is pressed.
-            Console.ReadKey();
+            // Console.ReadKey();
+        }
+
+        async Task MessageHandler(ProcessSessionMessageEventArgs args)
+        {
+            CalculatorMessage message = CalculatorMessage.FromJsonString(args.Message.Body.ToString());
+
+            // we can evaluate application logic and use that to determine how to settle the message.
+            await args.CompleteMessageAsync(args.Message);
+            await _calculatorHub.Clients.All.SendAsync("ReceiveMessage", "Server", $"[{message.BatchId}][{message.MessageId}]: {message.Response}");
+
+            Console.WriteLine("Received response: " + message.ToString());
+        }
+
+        Task ErrorHandler(ProcessErrorEventArgs args)
+        {
+            Console.WriteLine("Error Receiving message");
+            // the error source tells me at what point in the processing an error occurred
+            Console.WriteLine(args.ErrorSource);
+            // the fully qualified namespace is available
+            Console.WriteLine(args.FullyQualifiedNamespace);
+            // as well as the entity path
+            Console.WriteLine(args.EntityPath);
+            Console.WriteLine(args.Exception.ToString());
+            return Task.CompletedTask;
         }
     }
 }

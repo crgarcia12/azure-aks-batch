@@ -29,14 +29,14 @@ namespace Shared
 
                 pi += BigInteger.Divide(ak, BigInteger.Pow(sixteen, k));
 
-                if (ak == 0) break;
+                if (ak == 0 || k > 5000) break;
 
                 k++;
             }
 
             string piString = (pi / BigInteger.Pow(10, numberOfDigits)).ToString();
 
-            Console.WriteLine($"Calculation finished [{numberOfDigits}] digits [{sp.ElapsedMilliseconds}] ms");
+            Console.WriteLine($"Calculation finished [{numberOfDigits}] digits [{sp.ElapsedMilliseconds.ToString()}] ms");
             return piString[0] + "." + piString.Substring(1, numberOfDigits);
         }
     }

@@ -22,10 +22,22 @@ namespace client.Controllers
 
         public async Task<IActionResult> Privacy()
         {
-            ServiceBus sb = new ServiceBus();
-
-            await sb.SendMessages(_logger, 50);
             return View();
+        }
+
+        public async Task<IActionResult> SendMessages(string UserID, int Quantity)
+        {
+            try
+            {
+                ServiceBus serviceBus = new ServiceBus();
+                await serviceBus.SendMessages(UserID, Quantity);
+                return RedirectToAction("Privacty");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending messages");
+                return RedirectToAction("Index");
+            }
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

@@ -4,7 +4,7 @@
 # You also need to set the secrets. Copy platform/secrets.template.yaml to platform/secrets.yaml and fill in the values.
 
 param(
-    [string] $imageVersion = "028",
+    [string] $imageVersion = "031",
     [string] $prefix = "crgar-aks-batch",
     [switch] $delete = $false
 )
