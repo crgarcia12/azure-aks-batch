@@ -8,8 +8,8 @@ namespace Client.Services
     public static class Receiver
     {
         public static readonly string SessionId = Guid.NewGuid().ToString();
-        public static ServiceBusClient client;
-        public static ServiceBusSessionProcessor processor;
+        public static ServiceBusClient? client;
+        public static ServiceBusSessionProcessor? processor;
 
         public static async Task SetMessageReceiver()
         {

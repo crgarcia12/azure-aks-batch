@@ -1,9 +1,13 @@
 using Client.Services;
+using SignalRChat.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -21,6 +25,8 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapHub<ChatHub>("/signalRHub");
 
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 var queueReader = new Task(() => Receiver.SetMessageReceiver(), TaskCreationOptions.LongRunning);

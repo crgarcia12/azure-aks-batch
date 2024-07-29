@@ -20,7 +20,13 @@ namespace Shared
         public static CalculatorMessage FromJsonString(string message)
         {
             ArgumentNullException.ThrowIfNull(message, nameof(message));
-            return JsonSerializer.Deserialize<CalculatorMessage>(message);
+            CalculatorMessage? response = JsonSerializer.Deserialize<CalculatorMessage>(message);
+            if(response == null)
+            {
+                throw new ArgumentNullException("Could not deserialize");
+            }
+
+            return response;
         }
     }
 
