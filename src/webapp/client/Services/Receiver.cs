@@ -1,14 +1,17 @@
 ﻿using Azure.Messaging.ServiceBus;
 using Azure.Messaging.ServiceBus.Administration;
+using client.Services;
 using Client.SignalR;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Shared;
+using System.Text.Json;
 
 namespace Client.Services
 {
     public class Receiver
     {
+        public static int ReceivedMessages = 0;
         public static readonly string SessionId = Guid.NewGuid().ToString();
 
         private ServiceBusClient? _client;
@@ -104,11 +107,18 @@ namespace Client.Services
         {
             CalculatorMessage message = CalculatorMessage.FromJsonString(args.Message.Body.ToString());
 
+            ReceivedMessages++;
+            await _calculatorHub.Clients.All.SendAsync("UpdateMessagesReceived", ReceivedMessages);
+            await _calculatorHub.Clients.All.SendAsync("UpdateLastCalculationTimeMs", message.CalculationTimeMs);
+            await _calculatorHub.Clients.All.SendAsync("UpdateMessagesInQueue", ServiceBus.SentMessages - ReceivedMessages);
+
             // we can evaluate application logic and use that to determine how to settle the message.
             await args.CompleteMessageAsync(args.Message);
-            await _calculatorHub.Clients.All.SendAsync("ReceiveMessage", "Server", $"[{message.BatchId}][{message.MessageId}]: {message.Response}");
 
-            Console.WriteLine("Received response: " + message.ToString());
+            double totalProcessingTimeMs = (DateTime.UtcNow - message.StartProcessingUtc).TotalMilliseconds;
+            await _calculatorHub.Clients.All.SendAsync("ReceiveMessage", "Server", $"[{message.BatchId}][{message.MessageId}][{totalProcessingTimeMs} ms]: {message.Response}");           
+            Console.WriteLine("Total Processing Time: " + totalProcessingTimeMs);
+            Console.WriteLine("Received response: " + JsonSerializer.Serialize(message));
         }
 
         Task ErrorHandler(ProcessErrorEventArgs args)

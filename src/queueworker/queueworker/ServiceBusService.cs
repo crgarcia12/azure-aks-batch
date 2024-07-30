@@ -1,22 +1,55 @@
 ﻿using Azure.Core.Diagnostics;
 using Azure.Messaging.ServiceBus;
 using Azure.Messaging.ServiceBus.Administration;
+using Serilog;
 using Shared;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Text.Json;
 
 namespace queueworker;
 
 public class ServiceBus
 {
+    private readonly string PodName;
+    private readonly string NodeName;
+    
     ServiceBusProcessor? processor;
-    public string GetProcessorState()
+ 
+    private bool MakeSlower()
+    {
+        try
+        {
+            if (Environment.GetEnvironmentVariable("MAKE_SLOWER").Contains("1")) 
+            {
+                return true;
+            }                
+        }
+        catch(Exception ex)
+        {
+        }
+        return false;
+    }
+
+    public ServiceBus()
+    {
+        PodName = Environment.GetEnvironmentVariable("POD_NAME") ?? "Local";
+        NodeName = Environment.GetEnvironmentVariable("NODE_NAME") ?? "Local";
+    }
+
+    private void Log(string message)
+    {
+        Console.WriteLine($"[{NodeName}][{PodName}]" + message);
+    }
+
+    public void LogProcessorState()
     {
         if (processor == null)
         {
-            return "Processor - Not initialized";
+            Log($"Processor not initialized");
+            return;
         }
-        return $"Processor - IsProcessing:{processor.IsProcessing} IsClosed:{processor.IsClosed}";
+        Log($"Processor - IsProcessing:{processor.IsProcessing} IsClosed:{processor.IsClosed}");
     }
 
     public async Task ProcessMessagesAsync()
@@ -24,7 +57,7 @@ public class ServiceBus
         string connStr = SecretProvider.GetSecret("ServiceBusConnectionString");
         string queueName = Constant.ServiceBusRequestQueueName;
 
-        Console.WriteLine("Starting the queue client");
+        Log("Starting the queue client");
 
         // Set the logger, otherwise the processor will eat the exceptions
         using AzureEventSourceListener listener =
@@ -53,16 +86,25 @@ public class ServiceBus
         {
             try
             {
+                Stopwatch sw = Stopwatch.StartNew();
+
                 string body = args.Message.Body.ToString();
                 await args.CompleteMessageAsync(args.Message);
                 var msg = CalculatorMessage.FromJsonString(body);
 
+                Log($"[{msg.BatchId}][{msg.MessageId}] Start processing message");
                 PiCalculator piCalculator = new PiCalculator();
                 string piresponse = piCalculator.CalculatePi(msg.Digits);
                 msg.Response = piresponse;
+                msg.CalculationTimeMs = sw.ElapsedMilliseconds;
 
+                if(MakeSlower())
+                {
+                    Log($"[{msg.BatchId}][{msg.MessageId}] Warning: This is a very lazy calculator");
+                    await Task.Delay(5000);
+                }
                 await SendResponse(msg);
-                
+                Log($"[{msg.BatchId}][{msg.MessageId}] Finish processing message. It Took [{sw.ElapsedMilliseconds}] Ms");
             }
             catch (Exception ex)
             {
@@ -117,7 +159,7 @@ public class ServiceBus
                 {
                     SessionId = message.ResponseSessionId
                 };
-                Console.WriteLine($"Responding with message: '{msg.ToString()}'-");
+                Log($"Responding with message: '{JsonSerializer.Serialize(msg)}'-");
                 await sender.SendMessageAsync(msg);
             }
         }

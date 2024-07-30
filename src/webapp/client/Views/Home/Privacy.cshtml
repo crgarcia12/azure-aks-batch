@@ -1,35 +1,75 @@
 ﻿@{
     ViewData["Title"] = "Request Pricing";
 }
-<h1>@ViewData["Title"]</h1>
+<h1 class="text-center my-4">@ViewData["Title"]</h1>
 
 <div class="container">
-    <div class="row p-1">
-        <div class="col-1">SessionId</div>
-        <div class="col-5"><input type="text" id="sessionId" /></div>
-    </div>
-    <div class="row p-1">
-        <div class="col-1">Number of messages</div>
-        <div class="col-5"><input type="text" class="w-100" id="numberOfMessages" /></div>
-    </div>
-    <div class="row p-1">
-        <div class="col-6 text-end">
-            <input type="button" id="sendButton" value="Request Calculations" />
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Request Parameters</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3 row">
+                        <label for="sessionId" class="col-sm-2 col-form-label">SessionId</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" id="sessionId" />
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="numberOfMessages" class="col-sm-2 col-form-label">Number of messages</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" id="numberOfMessages" />
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-primary" id="sendButton">Request Calculations</button>
+                    </div>
+                    <div class="mt-3">
+                        <p id="serverMessage" class="text-muted"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Messages</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="list-group list-group-numbered" id="messagesList"></ol>
+                </div>
+            </div>
         </div>
-        <div>
-            <p id="serverMessage"></p>
-        </div>
-    </div>
-    <div class="row p-1">
-        <div class="col-6">
-            <hr />
-        </div>
-    </div>
-    <div class="row p-1">
-        <div class="col-6">
-            <ol type="1" id="messagesList"></ol>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Number of messages sent</h5>
+                    <p class="card-text display-4" id="messagesSent">0</p>
+                </div>
+            </div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Number of messages received</h5>
+                    <p class="card-text display-4" id="messagesReceived">0</p>
+                </div>
+            </div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Number of messages in the queue</h5>
+                    <p class="card-text display-4" id="messagesInQueue">0</p>
+                </div>
+            </div>
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Last calculation time Ms</h5>
+                    <p class="card-text display-4" id="lastCalculationTimeMs">0 ms</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
 <script src="~/js/signalr/dist/browser/signalr.js"></script>
 <script src="~/js/calculatorHub.js"></script>

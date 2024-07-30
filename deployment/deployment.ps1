@@ -4,7 +4,7 @@
 # You also need to set the secrets. Copy platform/secrets.template.yaml to platform/secrets.yaml and fill in the values.
 
 param(
-    [string] $imageVersion = "050",
+    [string] $imageVersion = "082",
     [string] $prefix = "crgar-aks-batch",
     [switch] $delete = $false
 )
@@ -16,7 +16,6 @@ if ((get-location | split-path -leaf) -ne "deployment" ) {
 function Get-UtcString() {
     return Get-Date -UFormat "%Y-%m-%dT%H:%M:%SZ"
 }
-
 function Execute-Block([string]$blockName, [ScriptBlock]$block) {
     Write-Verbose "[$(Get-UtcString)] Starting $blockName ..." -Verbose
     $stopwatch = [system.diagnostics.stopwatch]::StartNew()

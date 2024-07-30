@@ -17,6 +17,22 @@ connection.on("ReceiveMessage", function (user, message) {
     li.textContent = `${message}`;
 });
 
+connection.on("UpdateMessagesReceived", function (messages) {
+    document.getElementById("messagesReceived").innerHTML = messages;
+})
+
+connection.on("UpdateMessagesSent", function (messages) {
+    document.getElementById("messagesSent").innerHTML = messages;
+})
+
+connection.on("UpdateMessagesInQueue", function (messages) {
+    document.getElementById("messagesInQueue").innerHTML = messages;
+})
+connection.on("UpdateLastCalculationTimeMs", function (messages) {
+    document.getElementById("lastCalculationTimeMs").innerHTML = messages;
+})
+
+
 connection.start().then(function () {
     document.getElementById("sendButton").disabled = false;
 }).catch(function (err) {

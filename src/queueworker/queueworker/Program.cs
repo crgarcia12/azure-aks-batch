@@ -12,6 +12,6 @@ await serviceBusService.ProcessMessagesAsync();
 // Processing is happening in the background, we need to wait
 while (true)
 {
-    Console.WriteLine(serviceBusService.GetProcessorState());
+    serviceBusService.LogProcessorState();
     await Task.Delay(10000);
 }

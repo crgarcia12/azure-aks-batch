@@ -6,8 +6,8 @@ namespace Client.Services
 {
     public class ReceiverHostedService : BackgroundService
     {
-        private Receiver _receiver;
-        private IHubContext<CalculatorHub> _calculatorHub;
+        private Receiver? _receiver;
+        private readonly IHubContext<CalculatorHub> _calculatorHub;
 
         public ReceiverHostedService(IHubContext<CalculatorHub> calculatorHub)
         {

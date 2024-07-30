@@ -19,4 +19,22 @@ html {
 
 body {
   margin-bottom: 60px;
+  background-color: #dcdcdc;
+}
+
+.card {
+  border-radius: 0.5rem;
+}
+
+.card-header {
+  background-color: #007bff;
+  color: rgb(255, 255, 255);
+}
+
+.card-title {
+  margin-bottom: 0;
+}
+
+#sendButton {
+  width: 100%;
 }

@@ -20,24 +20,9 @@ namespace client.Controllers
             return View();
         }
 
-        public async Task<IActionResult> Privacy()
+        public IActionResult Privacy()
         {
             return View();
-        }
-
-        public async Task<IActionResult> SendMessages(string UserID, int Quantity)
-        {
-            try
-            {
-                ServiceBus serviceBus = new ServiceBus();
-                await serviceBus.SendMessages(UserID, Quantity);
-                return RedirectToAction("Privacty");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error sending messages");
-                return RedirectToAction("Index");
-            }
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

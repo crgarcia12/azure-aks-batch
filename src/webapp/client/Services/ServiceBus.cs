@@ -8,9 +8,10 @@ namespace client.Services;
 
 public class ServiceBus
 {
-    private static int BatchId = 0;
-    private static Random Rand = new Random();
+    public static int SentMessages = 0;
 
+    private static Random Rand = new Random();
+    
     private async Task<ServiceBusClient> GetServiceBusClient()
     {
         string connStr = SecretProvider.GetSecret("ServiceBusConnectionString");
@@ -30,9 +31,8 @@ public class ServiceBus
         return new ServiceBusClient(connStr, clientOptions);
     }
 
-    public async Task SendMessages(string UserId, int Quantity)
+    public async Task SendMessages(string SessionId, int Quantity)
     {
-        BatchId++;
         string queueName = Constant.ServiceBusRequestQueueName;
 
         await using (ServiceBusClient client = await GetServiceBusClient())
@@ -43,13 +43,16 @@ public class ServiceBus
                 {
                     for (int i = 1; i <= Quantity; i++)
                     {
+                        SentMessages++;
+
                         var message = new CalculatorMessage()
                         {
-                            BatchId = BatchId,
+                            BatchId = SessionId,
                             MessageId = i,
                             Digits = Rand.Next(5, 10),
                             ResponseSessionId = Receiver.SessionId,
-                            UserId = UserId
+                            UserId = SessionId,
+                            StartProcessingUtc = DateTime.UtcNow,
                         };
 
                         Console.WriteLine($"Sending message: '{message.ToString()}'-");

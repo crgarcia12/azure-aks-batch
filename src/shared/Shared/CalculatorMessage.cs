@@ -5,13 +5,14 @@ namespace Shared
     [Serializable]
     public class CalculatorMessage
     {
-        public int BatchId { get; set; }
+        public DateTime StartProcessingUtc { get; set; }
+        public string BatchId { get; set; } = string.Empty;
         public int MessageId { get; set; }
         public int Digits { get; set; }
-        public string ResponseSessionId { get; set; } = String.Empty;
-        public string Response { get; set; } = String.Empty;
-        public string UserId { get; set; } = String.Empty;
-
+        public string ResponseSessionId { get; set; } = string.Empty;
+        public string Response { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
+        public long CalculationTimeMs { get; set; }
 
         public override string ToString()
         {
