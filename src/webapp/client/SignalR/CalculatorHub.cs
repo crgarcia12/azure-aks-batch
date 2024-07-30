@@ -11,6 +11,7 @@ public class CalculatorHub : Hub
         int nrOfMessages = int.Parse(message);
         ServiceBus serviceBus = new ServiceBus();
         serviceBus.SendMessages(user, nrOfMessages);
+        await Clients.All.SendAsync("CalculationStarted");
     }
 
     public async Task SendToClient(string user, CalculatorMessage message)

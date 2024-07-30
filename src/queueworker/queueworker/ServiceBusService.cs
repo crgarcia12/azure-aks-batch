@@ -42,7 +42,7 @@ public class ServiceBus
         var sbProcessorOptions = new ServiceBusProcessorOptions
         {
             AutoCompleteMessages = false,
-            MaxConcurrentCalls = 100,
+            MaxConcurrentCalls = 1,
         };
 
         processor = client.CreateProcessor(queueName, sbProcessorOptions);

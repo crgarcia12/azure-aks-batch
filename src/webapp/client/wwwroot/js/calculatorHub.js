@@ -5,6 +5,9 @@ var connection = new signalR.HubConnectionBuilder().withUrl("/calculatorHub").bu
 //Disable the send button until connection is established.
 document.getElementById("sendButton").disabled = true;
 
+connection.on("CalculationStarted", function () {
+    document.getElementById("serverMessage").innerHTML = "Calculation has started...";
+});
 connection.on("ReceiveMessage", function (user, message) {
     var li = document.createElement("li");
     document.getElementById("messagesList").appendChild(li);

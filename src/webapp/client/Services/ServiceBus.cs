@@ -47,7 +47,7 @@ public class ServiceBus
                         {
                             BatchId = BatchId,
                             MessageId = i,
-                            Digits = Rand.Next(1, 5),
+                            Digits = Rand.Next(5, 10),
                             ResponseSessionId = Receiver.SessionId,
                             UserId = UserId
                         };

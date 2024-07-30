@@ -4,7 +4,7 @@ metadata:
   namespace: calculator
   name: queueworker
 spec:
-  replicas: 1
+  replicas: 5
   selector:
     matchLabels:
       app: queueworker
@@ -25,15 +25,16 @@ spec:
         secret:
           secretName: calculator-container-secrets
           optional: false
----
-apiVersion: keda.sh/v1alpha1
-kind: TriggerAuthentication
-metadata:
-  namespace: calculator
-  name: azure-servicebus-auth
-spec:
-  podIdentity:
-    provider: azure | azure-workload
+# ---
+# apiVersion: keda.sh/v1alpha1
+# kind: TriggerAuthentication
+# metadata:
+#   namespace: calculator
+#   name: azure-servicebus-auth
+# spec:
+#   podIdentity:
+#     provider: azure | azure-workload
+#     identity: <identity-name> # identity name
 ---
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
@@ -46,15 +47,8 @@ spec:
   triggers:
   - type: azure-servicebus
     metadata:
-      # Required: queueName OR topicName and subscriptionName
       queueName: workerqueue
-      # or
-      topicName: functions-sbtopic
-      subscriptionName: sbtopic-sub1
-      # Required: Define what Azure Service Bus to authenticate to with Managed Identity
-      namespace: service-bus-namespace
-      # Optional
+      namespace: crgar-aks-batchsb
       messageCount: "5" # default 5
-      cloud: AzureGermanCloud # Optional. Default: AzurePublicCloud
     authenticationRef:
         name: azure-servicebus-auth # authenticationRef would need either podIdentity or define a connection parameter
