@@ -27,7 +27,7 @@ Sessions are used to point the response to the right client.
 Grafana is the main visualizer for workload metrics:
 ![](readme-media/grafana.png)
 
-![alt text](image.png)
+![alt text](readme-media/queues.png)
 
 ## Some useful monitoring queries
 ```
