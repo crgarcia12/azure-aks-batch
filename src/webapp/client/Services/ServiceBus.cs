@@ -39,38 +39,45 @@ public class ServiceBus
         {
             await using (var sender = client.CreateSender(queueName))
             {
-                using (ServiceBusMessageBatch messageBatch = await sender.CreateMessageBatchAsync())
+                int rest = Quantity;
+
+                while (rest > 0)
                 {
-                    for (int i = 1; i <= Quantity; i++)
+                    Quantity = rest > 200 ? 200 : rest;
+                    rest -= 200;
+                    using (ServiceBusMessageBatch messageBatch = await sender.CreateMessageBatchAsync())
                     {
-                        SentMessages++;
-
-                        var message = new CalculatorMessage()
+                        for (int i = 1; i <= Quantity; i++)
                         {
-                            BatchId = SessionId,
-                            MessageId = i,
-                            Digits = Rand.Next(5, 10),
-                            ResponseSessionId = Receiver.SessionId,
-                            UserId = SessionId,
-                            StartProcessingUtc = DateTime.UtcNow,
-                        };
+                            SentMessages++;
 
-                        Console.WriteLine($"Sending message: '{message.ToString()}'-");
-                        if (!messageBatch.TryAddMessage(new ServiceBusMessage(message.ToString())))
-                        {
-                            throw new Exception($"Could not add message to the batch");
+                            var message = new CalculatorMessage()
+                            {
+                                BatchId = SessionId,
+                                MessageId = i,
+                                Digits = Rand.Next(5, 10),
+                                ResponseSessionId = Receiver.SessionId,
+                                UserId = SessionId,
+                                StartProcessingUtc = DateTime.UtcNow,
+                            };
+
+                            Console.WriteLine($"Sending message: '{message.ToString()}'-");
+                            if (!messageBatch.TryAddMessage(new ServiceBusMessage(message.ToString())))
+                            {
+                                throw new Exception($"Could not add message to the batch");
+                            }
                         }
-                    }
-                    try
-                    {
-                        // Use the producer client to send the batch of messages to the Service Bus queue
-                        await sender.SendMessagesAsync(messageBatch);
-                        Console.WriteLine($"A batch of {Quantity} messages has been published to the queue.");
-                    }
-                    finally
-                    {
-                        // Calling DisposeAsync on client types is required to ensure that network
-                        // resources and other unmanaged objects are properly cleaned up.
+                        try
+                        {
+                            // Use the producer client to send the batch of messages to the Service Bus queue
+                            await sender.SendMessagesAsync(messageBatch);
+                            Console.WriteLine($"A batch of {Quantity} messages has been published to the queue.");
+                        }
+                        finally
+                        {
+                            // Calling DisposeAsync on client types is required to ensure that network
+                            // resources and other unmanaged objects are properly cleaned up.
+                        }
                     }
                 }
             }
