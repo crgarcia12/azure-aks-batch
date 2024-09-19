@@ -1,6 +1,7 @@
-# azure-aks-batch
+# [In progress] Running Batch workloads on PaaS services
 
-This repo shows how you can run HPC works on AKS or Kubernetes
+This repo shows how you can run HPC works on PaaS services.
+The first one is AKS or Kubernetes
 
 ![client](readme-media/client.gif)
 
