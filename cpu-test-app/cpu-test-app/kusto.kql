@@ -1,0 +1,9 @@
+ContainerLogV2 
+| where TimeGenerated > ago(25m)
+| where ContainerName startswith "cpu-test-container"
+| where LogMessage startswith "[T:500]"
+| project TimeGenerated, LogMessage
+| extend replicas = toint(substring(LogMessage,10,1)) * 200
+| extend took = toint(split(LogMessage,'-',5)[0])
+| summarize avg(replicas), avg(took) by bin(TimeGenerated,1s)
+| render timechart

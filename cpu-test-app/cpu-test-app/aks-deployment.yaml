@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cpu-test-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cpu-test-app
+  template:
+    metadata:
+      labels:
+        app: cpu-test-app
+    spec:
+      containers:
+      - name: cpu-test-container
+        image: crgaraksbatchacr.azurecr.io/cpu-test:latest
+        resources:
+          requests:
+            cpu: "1"
+          limits:
+            cpu: "1"
+        env:
+        - name: TESTID
+          value: "500"
+        - name: REPLICAS
+          value: "6"
+      tolerations:
+      - key: "test"
+        operator: "Equal"
+        value: "cputest"
+        effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: "agentpool"
+                operator: "In"
+                values:
+                - "cputest"

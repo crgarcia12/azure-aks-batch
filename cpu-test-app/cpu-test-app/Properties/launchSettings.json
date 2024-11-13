@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "cpu-test-app": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
