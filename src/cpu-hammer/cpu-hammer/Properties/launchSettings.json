@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "cpu-hammer": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
